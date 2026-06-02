@@ -12,33 +12,11 @@ Emacs major mode for editing [meta-lisp](https://github.com/xieyuheng/meta-lisp)
 
 ## Installation
 
-### Manual
-
 Clone or copy the `meta-lisp-mode` directory into your Emacs load path, then add to `init.el`:
 
 ```elisp
 (add-to-list 'load-path "~/.emacs.d/meta-lisp-mode")
 (require 'meta-lisp-mode)
-```
-
-### use-package
-
-```elisp
-(use-package meta-lisp-mode
-  :load-path "~/.emacs.d/meta-lisp-mode"
-  :mode "\\.meta\\'")
-```
-
-### straight.el
-
-```elisp
-(use-package meta-lisp-mode
-  :straight (meta-lisp-mode
-             :type git
-             :host github
-             :repo "xieyuheng/meta-lisp"
-             :files ("editors/emacs/meta-lisp-mode/*.el"))
-  :mode "\\.meta\\'")
 ```
 
 ## Usage
@@ -55,12 +33,12 @@ M-x meta-lisp-mode
 
 Inherits standard `prog-mode` bindings plus:
 
-| Key | Command |
-|---|---|
-| `TAB` | `meta-lisp-indent-line` |
+| Key               | Command                                             |
+|-------------------|-----------------------------------------------------|
+| `TAB`             | `meta-lisp-indent-line`                             |
 | `C-M-f` / `C-M-b` | Forward / backward sexp (works with `()` `[]` `{}`) |
-| `C-M-u` | Backward up list |
-| `M-;` | Comment / uncomment (defaults to `;;`) |
+| `C-M-u`           | Backward up list                                    |
+| `M-;`             | Comment / uncomment (defaults to `;;`)              |
 
 ## CLI formatting
 
