@@ -43,6 +43,7 @@
     ("lambda" . 1)
     ("match" . 1)
     ("match-many" . 1)
+    ("swap" . 2)
     ("pipe" . 1)
     ("chain" . 0)
     ("compose" . 0)

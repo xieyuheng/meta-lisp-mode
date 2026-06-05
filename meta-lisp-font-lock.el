@@ -7,6 +7,7 @@
     "if" "cond" "when" "unless" "and" "or" "else"
     "begin" "match" "match-many"
     "pipe" "chain" "compose"
+    "swap"
     "="
     "module" "import" "import-as" "import-all" "private"
     "claim" "claim-type" "admit" "the" "polymorphic"
