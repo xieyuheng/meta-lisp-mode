@@ -90,6 +90,10 @@ For example: (@list 1 2 3) is sugar for [1 2 3].")
    (,(concat "(\\(@comment\\)\\_>")
     1 'font-lock-comment-face)
 
+   ;; for-* special forms at head position: (for-list ...)  (for-hash ...)  etc.
+   (,(concat "(\\(for-\\)" meta-lisp--name-re "\\_>")
+    1 font-lock-keyword-face)
+
    ;; Builtin constants as standalone symbols: true  false  void
    (,(concat "\\_<" (meta-lisp--re-builtin-constants) "\\_>")
     0 font-lock-builtin-face)

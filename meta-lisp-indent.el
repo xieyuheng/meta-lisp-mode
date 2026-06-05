@@ -136,7 +136,8 @@ Returns the keyword as a string, or nil if the sexp has no keyword."
 
 Returns the number 0 or 1, or nil if KEYWORD is not a known keyword."
   (when keyword
-    (cdr (assoc keyword meta-lisp--keyword-spec-table))))
+    (or (cdr (assoc keyword meta-lisp--keyword-spec-table))
+        (when (string-prefix-p "for-" keyword) 1))))
 
 (defun meta-lisp--forward-over-special-args (sexp-opening-pos n)
   "Move point past the keyword and N special argument sexps.
