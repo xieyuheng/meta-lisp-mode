@@ -39,9 +39,12 @@ example/abc
 
 (define (classify x)
   (cond
-    ((int-positive? x) "positive")
-    ((int-negative? x) "negative")
-    (else "zero")))
+    ((int-positive? x)
+     "positive")
+    ((int-negative? x)
+     "negative")
+    (else
+     "zero")))
 
 (when true
   (println "always runs")

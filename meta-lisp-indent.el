@@ -3,75 +3,75 @@
 (require 'cl-lib)
 
 ;;; Keyword indent specifications
-;;; Each keyword has a spec number:
-;;;   0 = all children are body (e.g. begin, cond)
-;;;   1 = first child is special, rest is body (e.g. define, lambda, let)
+;;; Each keyword entry is (KEYWORD SPEC [BODY-OFFSET]):
+;;;   SPEC = number of special args before body (0, 1, or 2)
+;;;   BODY-OFFSET = indent offset from opening paren (default 2)
 
 (defvar meta-lisp--keyword-spec-table
-  '(("module" . 1)
-    ("import" . 1)
-    ("import-as" . 0)
-    ("import-all" . 0)
-    ("exempt" . 0)
-    ("private" . 0)
-    ("claim" . 1)
-    ("claim-type" . 1)
-    ("admit" . 1)
-    ("define" . 1)
-    ("declare-primitive-function" . 1)
-    ("declare-primitive-variable" . 1)
-    ("define-enum" . 1)
-    ("define-algebraic-type" . 1)
-    ("define-struct" . 1)
-    ("define-struct*" . 1)
-    ("define-record-type" . 1)
-    ("define-test" . 1)
-    ("define-type" . 1)
-    ("define-opaque-type" . 2)
-    ("let" . 1)
-    ("let*" . 1)
-    ("letrec" . 1)
-    ("letrec*" . 1)
-    ("=" . 1)
-    ("->" . 0)
-    ("the" . 1)
-    ("assert" . 0)
-    ("assert-not" . 0)
-    ("assert-equal" . 1)
-    ("assert-not-equal" . 1)
-    ("begin" . 0)
-    ("lambda" . 1)
-    ("match" . 1)
-    ("match-many" . 1)
-    ("swap" . 2)
-    ("pipe" . 1)
-    ("chain" . 0)
-    ("compose" . 0)
-    ("if" . 1)
-    ("when" . 1)
-    ("unless" . 1)
-    ("and" . 0)
-    ("or" . 0)
-    ("else" . 0)
-    ("cond" . 0)
-    ("@list" . 0)
-    ("@set" . 0)
-    ("@hash" . 0)
-    ("@quote" . 0)
-    ("@sexp" . 0)
-    ("@string" . 0)
-    ("@comment" . 0)
-    ("polymorphic" . 1))
-  "Alist mapping keyword symbols to their indent spec number.
+  '(("module" 1)
+    ("import" 1)
+    ("import-as" 0)
+    ("import-all" 0)
+    ("exempt" 0)
+    ("private" 0)
+    ("claim" 1)
+    ("claim-type" 1)
+    ("admit" 1)
+    ("define" 1)
+    ("declare-primitive-function" 1)
+    ("declare-primitive-variable" 1)
+    ("define-enum" 1)
+    ("define-algebraic-type" 1)
+    ("define-struct" 1)
+    ("define-struct*" 1)
+    ("define-record-type" 1)
+    ("define-test" 1)
+    ("define-type" 1)
+    ("define-opaque-type" 2)
+    ("let" 1)
+    ("let*" 1)
+    ("letrec" 1)
+    ("letrec*" 1)
+    ("=" 1)
+    ("->" 0)
+    ("the" 1)
+    ("assert" 0)
+    ("assert-not" 0)
+    ("assert-equal" 1)
+    ("assert-not-equal" 1)
+    ("begin" 0)
+    ("lambda" 1)
+    ("match" 1)
+    ("match-many" 1)
+    ("swap" 2)
+    ("pipe" 1)
+    ("chain" 0)
+    ("compose" 0)
+    ("if" 1)
+    ("when" 1)
+    ("unless" 1)
+    ("and" 0)
+    ("or" 0)
+    ("else" 0 1)
+    ("cond" 0)
+    ("@list" 0)
+    ("@set" 0)
+    ("@hash" 0)
+    ("@quote" 0)
+    ("@sexp" 0)
+    ("@string" 0)
+    ("@comment" 0)
+    ("polymorphic" 1))
+  "Alist mapping keywords to their indent specification.
 
-A spec of 1 means the first child argument is 'special'
-(typically the name, bindings, or target expression) and appears
-on the same line as the keyword.  The remaining children form the
-body, indented 2 spaces from the opening paren.
+Each entry is a list (KEYWORD SPEC [BODY-OFFSET]).
+SPEC is the number of 'special' arguments to skip before body forms:
+  0 = all children are body
+  1 = first child is special, rest is body
+  2 = first two children are special, rest is body
 
-A spec of 0 means all children are body, indented 2 spaces.
-
-Extracted from sexpConfig.ts in the meta-lisp compiler.")
+BODY-OFFSET is the indentation offset from the opening paren for
+body forms (default 2).")
 
 ;;; Helpers
 
@@ -132,12 +132,14 @@ Returns the keyword as a string, or nil if the sexp has no keyword."
     (meta-lisp--read-symbol-around (point))))
 
 (defun meta-lisp--keyword-spec (keyword)
-  "Return the indent spec code for KEYWORD.
+  "Return the indent spec and body-offset for KEYWORD as a cons (SPEC . OFFSET).
 
-Returns the number 0 or 1, or nil if KEYWORD is not a known keyword."
+Returns nil if KEYWORD is not a known keyword."
   (when keyword
-    (or (cdr (assoc keyword meta-lisp--keyword-spec-table))
-        (when (string-prefix-p "for-" keyword) 1))))
+    (let ((entry (assoc keyword meta-lisp--keyword-spec-table)))
+      (cond
+       (entry (cons (cadr entry) (or (caddr entry) 2)))
+       ((string-prefix-p "for-" keyword) (cons 1 2))))))
 
 (defun meta-lisp--forward-over-special-args (sexp-opening-pos n)
   "Move point past the keyword and N special argument sexps.
@@ -205,12 +207,13 @@ All elements align with the first element."
 
 ;;; Body indent computation
 
-(defun meta-lisp--compute-body-indent (containing-pos body-start-pos)
+(defun meta-lisp--compute-body-indent (containing-pos body-start-pos offset)
   "Compute the body indentation for a sexp containing the current line.
 
 CONTAINING-POS is the position of the opening paren of the
 containing sexp.  BODY-START-POS is the position of the first
 body element (after skipping the keyword and any special args).
+OFFSET is the indentation offset from the opening paren.
 
 Returns the column number to indent to."
   (save-excursion
@@ -222,11 +225,11 @@ Returns the column number to indent to."
           ;; Body starts on same line as keyword -- align subsequent
           ;; body elements with the first body element
           (current-column)
-        ;; Body starts on a new line -- indent 2 from opening paren
+        ;; Body starts on a new line -- indent OFFSET from opening paren
         (+ (save-excursion
              (goto-char containing-pos)
              (current-column))
-           2)))))
+           offset)))))
 
 ;;; Default (function-call) indent computation
 
@@ -292,26 +295,28 @@ Returns the column number, or nil (meaning don't change indentation)."
 
         (t
          (let* ((keyword (meta-lisp--read-keyword-at-sexp-head containing))
-                (spec (meta-lisp--keyword-spec keyword)))
+                (spec-pair (meta-lisp--keyword-spec keyword)))
            (cond
-            ((null spec)
+            ((null spec-pair)
              ;; Not a keyword -- use function-call indentation
              (meta-lisp--compute-function-indent containing))
 
             (t
              ;; Keyword with spec
-             (let ((body-start (meta-lisp--forward-over-special-args containing spec)))
+             (let* ((spec (car spec-pair))
+                    (body-offset (cdr spec-pair))
+                    (body-start (meta-lisp--forward-over-special-args containing spec)))
                (cond
                 ((null body-start)
-                 ;; Malformed -- fall back to 2 spaces from opening paren
+                 ;; Malformed -- fall back to OFFSET from opening paren
                  (+ (save-excursion
                       (goto-char containing)
                       (current-column))
-                    2))
+                    body-offset))
 
                 ;; If we're in the body region, use body indentation
                 ((>= pos body-start)
-                 (meta-lisp--compute-body-indent containing body-start))
+                 (meta-lisp--compute-body-indent containing body-start body-offset))
 
                 ;; Otherwise, we're in a special arg -- use default alignment
                 (t
