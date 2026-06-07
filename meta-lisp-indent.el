@@ -32,7 +32,7 @@
     (let* 1)
     (letrec 1)
     (letrec* 1)
-    (= 1)
+    (= 0)
     (-> 0)
     (the 1)
     (assert 0)
