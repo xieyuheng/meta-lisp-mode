@@ -333,7 +333,8 @@ Returns the column number, or nil (meaning don't change indentation)."
 (defun meta-lisp-indent-line ()
   "Indent the current line as meta-lisp code."
   (interactive)
-  (let* ((target (save-excursion (back-to-indentation) (point)))
+  (let* ((orig-point (point))
+         (target (save-excursion (back-to-indentation) (point)))
          (state (syntax-ppss target)))
     (if (meta-lisp--inside-string-p state)
         ;; Inside a string -- don't change indentation
@@ -344,7 +345,11 @@ Returns the column number, or nil (meaning don't change indentation)."
             (indent-line-to (current-column))))
       (let ((indent (meta-lisp--compute-indent target state)))
         (when indent
-          (indent-line-to indent))))))
+          (if (>= orig-point target)
+              (let ((offset (- orig-point target)))
+                (indent-line-to indent)
+                (forward-char offset))
+            (indent-line-to indent)))))))
 
 (provide 'meta-lisp-indent)
 ;;; meta-lisp-indent.el ends here
