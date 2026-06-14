@@ -161,8 +161,9 @@ Returns the position after skipping, or nil on error."
           ;; Skip over N special argument sexps
           (dotimes (_ n)
             (forward-sexp 1))
-          ;; Skip whitespace including newlines
-          (skip-chars-forward " \t\n\r")
+          ;; Skip whitespace (but not newlines, to avoid jumping
+          ;; past empty lines before the first body form)
+          (skip-chars-forward " \t")
           (point))
       (error nil))))
 
@@ -223,11 +224,14 @@ Returns the column number to indent to."
     ;; Check if the first body element is on the same line as the keyword
     (let* ((containing-line (line-number-at-pos containing-pos))
            (body-line (line-number-at-pos body-start-pos)))
-      (if (= containing-line body-line)
-          ;; Body starts on same line as keyword -- align subsequent
+      (if (and (= containing-line body-line)
+               (not (eolp)))
+          ;; Body starts on same line as keyword AND there is
+          ;; actual content on that line -- align subsequent
           ;; body elements with the first body element
           (current-column)
-        ;; Body starts on a new line -- indent OFFSET from opening paren
+        ;; Body starts on a new line (or same line with no content) --
+        ;; indent OFFSET from opening paren
         (+ (save-excursion
              (goto-char containing-pos)
              (current-column))
