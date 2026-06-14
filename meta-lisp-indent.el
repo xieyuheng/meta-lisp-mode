@@ -342,9 +342,12 @@ Returns the column number, or nil (meaning don't change indentation)."
           (save-excursion
             (goto-char (nth 8 state))
             (indent-line-to (current-column))))
-      (let ((indent (meta-lisp--compute-indent target state)))
+      (let ((indent (meta-lisp--compute-indent target state))
+            (pos (- (point-max) (point))))
         (when indent
-          (indent-line-to indent))))))
+          (indent-line-to indent)
+          (when (> (- (point-max) pos) (point))
+            (goto-char (- (point-max) pos))))))))
 
 (provide 'meta-lisp-indent)
 ;;; meta-lisp-indent.el ends here
