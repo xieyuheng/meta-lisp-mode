@@ -51,7 +51,7 @@ For example: (@list 1 2 3) is sugar for [1 2 3].")
   (regexp-opt meta-lisp--builtin-constants))
 
 (defconst meta-lisp--name-re
-  "[a-zA-Z][-a-zA-Z0-9?!+*/=<>_]*"
+  "[a-zA-Z.$%&@][-a-zA-Z0-9?!+*/=<>_.$%&@]*"
   "Regexp matching a meta-lisp name.")
 
 ;;; Non-symbolic faces that are not provided by font-lock
@@ -98,21 +98,21 @@ For example: (@list 1 2 3) is sugar for [1 2 3].")
    (,(concat "\\_<" (meta-lisp--re-builtin-constants) "\\_>")
     0 font-lock-builtin-face)
 
+   ;; Quoted symbols: 'foo '.value '$value$  (before type-names for priority)
+   (,(concat "'" meta-lisp--name-re "\\_>")
+    0 font-lock-constant-face)
+
    ;; Type names: any symbol ending in -t  (int-t  point-t  exp-t  ...)
-   (,(concat "\\_<[a-zA-Z][-a-zA-Z0-9?!+*/=<>_]*-t\\_>")
+   (,(concat "\\_<[a-zA-Z.$%&@][-a-zA-Z0-9?!+*/=<>_.$%&@]*-t\\_>")
     0 font-lock-type-face)
 
    ;; Module prefix: module/ in qualified names like module/name
    ;; OVERRIDE=t so it overrides the type face on e.g. builtin/string-t
-   (,(concat "\\_<\\([a-zA-Z][-a-zA-Z0-9?!+*/=<>_]*/\\)")
+   (,(concat "\\_<\\([a-zA-Z.$%&@][-a-zA-Z0-9?!+*/=<>_.$%&@]*/\\)")
     1 'meta-lisp-module-name-face t)
 
    ;; Keywords: :key :name :etc
    (,(concat "\\_<:[-a-zA-Z0-9?!+*/=<>_]+\\_>")
-    0 font-lock-constant-face)
-
-   ;; Quoted symbols: 'foo 'bar
-   (,(concat "'" meta-lisp--name-re "\\_>")
     0 font-lock-constant-face)
 
    ;; Numbers: integers and floats

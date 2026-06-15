@@ -115,6 +115,27 @@ example/abc
 (define config (@hash :host "localhost" :port 8080))
 (define sym 'hello)
 
+;; Quoted symbols with special chars (. $ % & @)
+(define dot-sym '.value)
+(define dot-sym2 'foo.bar)
+(define dollar-sym '$value$)
+(define percent-sym '%value%)
+(define ampersand-sym '&value&)
+(define at-sym '@value@)
+
+;; Type names with special chars
+.string-t
+foo.bar-t
+$money-t
+%ratio-t
+&ref-t
+@type-t
+
+;; Quoted type names should still get constant face, not type face
+'string-t
+'.value-t
+'$money-t
+
 ;; === Lists ===
 
 (define xs [1 2 3 4 5])
