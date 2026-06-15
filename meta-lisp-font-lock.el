@@ -111,6 +111,10 @@ For example: (@list 1 2 3) is sugar for [1 2 3].")
    (,(concat "\\_<:[-a-zA-Z0-9?!+*/=<>_]+\\_>")
     0 font-lock-constant-face)
 
+   ;; Quoted symbols: 'foo 'bar
+   (,(concat "'" meta-lisp--name-re "\\_>")
+    0 font-lock-constant-face)
+
    ;; Numbers: integers and floats
    (,(concat "\\_<-?[0-9]+\\(\\.[0-9]+\\)?\\_>")
     0 font-lock-constant-face)
