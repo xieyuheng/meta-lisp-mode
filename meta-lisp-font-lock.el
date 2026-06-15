@@ -54,6 +54,49 @@ For example: (@list 1 2 3) is sugar for [1 2 3].")
   "[a-zA-Z.$%&@][-a-zA-Z0-9?!+*/=<>_.$%&@]*"
   "Regexp matching a meta-lisp name.")
 
+(defconst meta-lisp--non-expression-heads
+  '(("let" . :structural)
+    ("let*" . :structural)
+    ("letrec" . :structural)
+    ("letrec*" . :structural)
+    ("lambda" . :structural)
+    ("polymorphic" . :structural)
+    ("define" . 1)
+    ("claim" . 1)
+    ("claim-type" . 1)
+    ("admit" . 1)
+    ("the" . 1)
+    ("define-struct" . 1)
+    ("define-struct*" . 1)
+    ("define-enum" . 1)
+    ("define-type" . 1)
+    ("define-opaque-type" . 2)
+    ("define-algebraic-type" . 1)
+    ("define-record-type" . 1)
+    ("define-test" . 1)
+    ("module" . :all)
+    ("import" . :all)
+    ("import-as" . :all)
+    ("import-all" . :all)
+    ("private" . :all)
+    ("exempt" . :all)
+    ("declare-primitive-function" . :all)
+    ("declare-primitive-variable" . :all))
+  "Alist mapping keywords to non-expression argument positions.
+
+Values:
+  :structural -- arg 1 is a structural list whose direct children
+                 have non-expression heads (e.g. let bindings,
+                 lambda params, polymorphic type params).
+  N (integer) -- first N arguments have non-expression heads
+                 (e.g. define's name/header at arg 1).
+  :all        -- all arguments have non-expression heads
+                 (e.g. module declarations).
+
+Keywords not in this table have all arguments treated as
+expressions (e.g. if, when, cond, begin, match, etc.).  for-*
+forms are implicitly treated as :structural.")
+
 ;;; Non-symbolic faces that are not provided by font-lock
 
 (defface meta-lisp-module-name-face
@@ -76,10 +119,70 @@ unless it is a known special form, @-form, or for-* form."
 
 ;;; Font-lock keywords
 
+(defun meta-lisp--read-head (paren-pos)
+  "Return the symbol at the head of the list starting at PAREN-POS.
+Returns nil if the first element is not a symbol (e.g. a nested list)."
+  (save-excursion
+    (goto-char (1+ paren-pos))
+    (when (looking-at meta-lisp--name-re)
+      (match-string-no-properties 0))))
+
+(defun meta-lisp--lookup-rule (head)
+  "Return the non-expression rule for HEAD keyword, or nil.
+Handles for-* forms as :structural implicitly."
+  (or (cdr (assoc head meta-lisp--non-expression-heads))
+      (when (string-prefix-p "for-" head) :structural)))
+
+(defun meta-lisp--arg-index (parent-start form-start)
+  "Return 1-based argument index of FORM-START within PARENT-START.
+FORM-START must be the position of an opening paren of a sub-form
+inside the list at PARENT-START.  The first element (keyword) is
+skipped."
+  (save-excursion
+    (goto-char (1+ parent-start))
+    (forward-sexp 1)
+    (let ((idx 1)
+          (done nil))
+      (while (and (not done) (< (point) form-start))
+        (let ((end (save-excursion (forward-sexp 1) (point))))
+          (if (< form-start end)
+              (setq done t)
+            (goto-char end)
+            (setq idx (1+ idx)))))
+      idx)))
+
+(defun meta-lisp--function-call-position-p (form-start)
+  "Return non-nil if the list starting at FORM-START is in a function-call
+position.  FORM-START is the buffer position of the opening paren."
+  (let ((parent-pos (nth 1 (save-excursion (syntax-ppss (max (point-min) (1- form-start)))))))
+    (if (not parent-pos)
+        t
+      (let* ((parent-head (meta-lisp--read-head parent-pos))
+             (rule (when parent-head (meta-lisp--lookup-rule parent-head))))
+        (cond
+         (rule
+          (let ((idx (meta-lisp--arg-index parent-pos form-start)))
+            (cond
+             ((eq rule :all) nil)
+             ((eq rule :structural) (not (= idx 1)))
+             ((integerp rule) (> idx rule))
+             (t t))))
+         ((null parent-head)
+          (let ((grand-pos (nth 1 (save-excursion (syntax-ppss (max (point-min) (1- parent-pos)))))))
+            (if grand-pos
+                (let* ((grand-head (meta-lisp--read-head grand-pos))
+                       (grand-rule (when grand-head (meta-lisp--lookup-rule grand-head))))
+                  (if (and (eq grand-rule :structural)
+                           (= (meta-lisp--arg-index grand-pos parent-pos) 1))
+                      nil
+                    t))
+              t)))
+         (t t))))))
+
 (defun meta-lisp--match-function-call (limit)
   "Font-lock matcher: highlight function names in application position.
 Match (name ...) where name is not a special form, @-form, @comment,
-or for-* form."
+or for-* form, and the position is a genuine function-call context."
   (when meta-lisp-highlight-function-calls
     (catch 'meta-lisp--found
       (while (re-search-forward
@@ -90,7 +193,10 @@ or for-* form."
                       (member name meta-lisp--at-forms)
                       (string= name "@comment")
                       (string-prefix-p "for-" name))
-            (throw 'meta-lisp--found t)))))))
+            (when (save-match-data
+                    (meta-lisp--function-call-position-p
+                     (match-beginning 0)))
+              (throw 'meta-lisp--found t))))))))
 
 (defvar meta-lisp-font-lock-keywords
   `(

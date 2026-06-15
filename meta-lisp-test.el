@@ -347,6 +347,48 @@ face at that position is returned."
                       'font-lock-keyword-face)))
       (setq meta-lisp-highlight-function-calls old))))
 
+(ert-deftest meta-lisp-font-lock-function-call-context ()
+  "Heads in non-expression positions should NOT get function-name-face."
+  (let ((old meta-lisp-highlight-function-calls))
+    (setq meta-lisp-highlight-function-calls t)
+    (unwind-protect
+        (progn
+          ;; lambda param list
+          (should-not (eq (meta-lisp-test--font-lock-at "(lambda (§pair) pair)")
+                          'font-lock-function-name-face))
+          ;; let binding variable
+          (should-not (eq (meta-lisp-test--font-lock-at "(let ((§x 1)) x)")
+                          'font-lock-function-name-face))
+          ;; polymorphic type param
+          (should-not (eq (meta-lisp-test--font-lock-at "(polymorphic (§A) A)")
+                          'font-lock-function-name-face))
+          ;; define function header name (highlighted by existing define-name rule)
+          (should (eq (meta-lisp-test--font-lock-at "(define (§f x) (g x))")
+                      'font-lock-function-name-face))
+          ;; declare-primitive: all args are non-expression
+          (should-not (eq (meta-lisp-test--font-lock-at "(declare-primitive-function §add1 1)")
+                          'font-lock-function-name-face))
+          ;; define name (highlighted by existing define-name rule)
+          (should (eq (meta-lisp-test--font-lock-at "(define (§my-fn x) x)")
+                      'font-lock-function-name-face))
+          ;; --- These SHOULD be highlighted (expression positions) ---
+          ;; let binding VALUE expression
+          (should (eq (meta-lisp-test--font-lock-at "(let ((x (§f 1))) x)")
+                      'font-lock-function-name-face))
+          ;; let body
+          (should (eq (meta-lisp-test--font-lock-at "(let ((x 1)) (§g x))")
+                      'font-lock-function-name-face))
+          ;; lambda body
+          (should (eq (meta-lisp-test--font-lock-at "(lambda (x) (§iadd x 1))")
+                      'font-lock-function-name-face))
+          ;; polymorphic body
+          (should (eq (meta-lisp-test--font-lock-at "(polymorphic (A) (§id A))")
+                      'font-lock-function-name-face))
+          ;; deep nesting: let binding value expression
+          (should (eq (meta-lisp-test--font-lock-at "(let ((x (§car (§cdr y)))) x)")
+                      'font-lock-function-name-face)))
+      (setq meta-lisp-highlight-function-calls old))))
+
 (ert-deftest meta-lisp-font-lock-function-call-disabled ()
   "When the option is disabled, function calls should have no face."
   (let ((old meta-lisp-highlight-function-calls))
