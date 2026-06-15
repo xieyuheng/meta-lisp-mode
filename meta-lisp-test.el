@@ -323,5 +323,38 @@ face at that position is returned."
     (forward-sexp 1)
     (should (eobp))))
 
+(ert-deftest meta-lisp-font-lock-function-call ()
+  "Function calls in application position should use font-lock-function-name-face."
+  (let ((old meta-lisp-highlight-function-calls))
+    (setq meta-lisp-highlight-function-calls t)
+    (unwind-protect
+        (progn
+          (should (eq (meta-lisp-test--font-lock-at "(§iadd 1 2)")
+                      'font-lock-function-name-face))
+          (should (eq (meta-lisp-test--font-lock-at "(§println \"hello\")")
+                      'font-lock-function-name-face))
+          (should (eq (meta-lisp-test--font-lock-at "(§car xs)")
+                      'font-lock-function-name-face))
+          ;; Special forms still get keyword face, not function face
+          (should (eq (meta-lisp-test--font-lock-at "(§lambda (x) x)")
+                      'font-lock-keyword-face))
+          (should (eq (meta-lisp-test--font-lock-at "(§let ((x 1)) x)")
+                      'font-lock-keyword-face))
+          (should (eq (meta-lisp-test--font-lock-at "(§define (f x) x)")
+                      'font-lock-keyword-face))
+          ;; for-* still gets keyword face
+          (should (eq (meta-lisp-test--font-lock-at "(§for-list (x xs) x)")
+                      'font-lock-keyword-face)))
+      (setq meta-lisp-highlight-function-calls old))))
+
+(ert-deftest meta-lisp-font-lock-function-call-disabled ()
+  "When the option is disabled, function calls should have no face."
+  (let ((old meta-lisp-highlight-function-calls))
+    (setq meta-lisp-highlight-function-calls nil)
+    (unwind-protect
+        (should-not (eq (meta-lisp-test--font-lock-at "(§iadd 1 2)")
+                        'font-lock-function-name-face))
+      (setq meta-lisp-highlight-function-calls old))))
+
 (provide 'meta-lisp-test)
 ;;; meta-lisp-test.el ends here

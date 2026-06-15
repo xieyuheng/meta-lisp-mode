@@ -66,7 +66,31 @@ For example: (@list 1 2 3) is sugar for [1 2 3].")
   "Face for @-prefixed forms like `@list' in meta-lisp."
   :group 'meta-lisp)
 
+(defcustom meta-lisp-highlight-function-calls nil
+  "If non-nil, highlight function names in application position.
+When enabled, the first element of a function call form like
+\(f x y) is highlighted with `font-lock-function-name-face',
+unless it is a known special form, @-form, or for-* form."
+  :type 'boolean
+  :group 'meta-lisp)
+
 ;;; Font-lock keywords
+
+(defun meta-lisp--match-function-call (limit)
+  "Font-lock matcher: highlight function names in application position.
+Match (name ...) where name is not a special form, @-form, @comment,
+or for-* form."
+  (when meta-lisp-highlight-function-calls
+    (catch 'meta-lisp--found
+      (while (re-search-forward
+              (concat "(\\(" meta-lisp--name-re "\\)\\_>")
+              limit t)
+        (let ((name (match-string-no-properties 1)))
+          (unless (or (member name meta-lisp--special-forms)
+                      (member name meta-lisp--at-forms)
+                      (string= name "@comment")
+                      (string-prefix-p "for-" name))
+            (throw 'meta-lisp--found t)))))))
 
 (defvar meta-lisp-font-lock-keywords
   `(
@@ -93,6 +117,9 @@ For example: (@list 1 2 3) is sugar for [1 2 3].")
    ;; for-* special forms at head position: (for-list ...)  (for-hash ...)  etc.
    (,(concat "(\\(for-" meta-lisp--name-re "\\)\\_>")
     1 font-lock-keyword-face)
+
+   ;; Function calls: (f x y) where f is not a special form
+   (meta-lisp--match-function-call 1 font-lock-function-name-face)
 
    ;; Builtin constants as standalone symbols: true  false  void
    (,(concat "\\_<" (meta-lisp--re-builtin-constants) "\\_>")
