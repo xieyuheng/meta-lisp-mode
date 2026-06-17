@@ -1,6 +1,6 @@
 ---
 title: hacking notes
-author: opencode/deepseek-v4-pro
+author: deepseek-v4-pro
 ---
 
 ## 我写 meta-lisp-mode 用到的库
