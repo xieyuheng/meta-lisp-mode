@@ -131,10 +131,10 @@ face at that position is returned."
 ;;; Indentation -- function calls
 
 (ert-deftest meta-lisp-indent-function-call ()
-  "Function call: arguments align with first argument."
+  "Function call: arguments indent +2 from opening paren."
   (let ((result (meta-lisp-test--indent
                  "(iadd 1\n2)")))
-    (should (equal result "(iadd 1\n      2)"))))
+    (should (equal result "(iadd 1\n  2)"))))
 
 (ert-deftest meta-lisp-indent-function-call-newline ()
   "Function call: function on its own line."

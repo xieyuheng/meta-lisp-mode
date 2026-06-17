@@ -257,20 +257,11 @@ with the first argument."
             (if (meta-lisp--at-opening-paren-p (point))
                 ;; Car is a list -- align with it
                 first-col
-              ;; Car is an atom -- align with first argument
-              (forward-sexp 1)            ; skip the atom
-              (skip-chars-forward " \t\n\r") ; skip whitespace to first arg
-              (if (eobp)
-                  (+ first-col 2)
-                (if (= (line-number-at-pos containing-pos)
-                       (line-number-at-pos (point)))
-                    ;; First arg on same line -- align with it
-                    (current-column)
-                  ;; First arg on its own line -- indent 2
-                  (+ (save-excursion
-                       (goto-char containing-pos)
-                       (current-column))
-                     2))))))
+              ;; Car is an atom -- indent all args +2 from opening paren
+              (+ (save-excursion
+                   (goto-char containing-pos)
+                   (current-column))
+                 2))))
       (error
        (+ (save-excursion
             (goto-char containing-pos)
