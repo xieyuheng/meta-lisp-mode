@@ -398,5 +398,225 @@ face at that position is returned."
                         'font-lock-function-name-face))
       (setq meta-lisp-highlight-function-calls old))))
 
+;;; Chinese syntax tests (中文语法)
+
+;;; Indentation -- Chinese keywords
+
+(ert-deftest meta-lisp-indent-zh-define-fn ()
+  "定义 with function form: body indented 2 from opening paren."
+  (let ((result (meta-lisp-test--indent
+                 "(定义 (平方 x)\n(整数乘 x x))")))
+    (should (equal result "(定义 (平方 x)\n  (整数乘 x x))"))))
+
+(ert-deftest meta-lisp-indent-zh-define-var ()
+  "定义 with variable: body indented 2."
+  (let ((result (meta-lisp-test--indent
+                 "(定义 answer\n42)")))
+    (should (equal result "(定义 answer\n  42)"))))
+
+(ert-deftest meta-lisp-indent-zh-lambda ()
+  "函: params special, body indented 2."
+  (let ((result (meta-lisp-test--indent
+                 "(函 (x)\n(整数加 x 1))")))
+    (should (equal result "(函 (x)\n  (整数加 x 1))"))))
+
+(ert-deftest meta-lisp-indent-zh-claim ()
+  "声明: name special, type indented 2."
+  (let ((result (meta-lisp-test--indent
+                 "(声明 add1\n(-> 整数型 整数型))")))
+    (should (equal result "(声明 add1\n  (-> 整数型 整数型))"))))
+
+(ert-deftest meta-lisp-indent-zh-let ()
+  "令: bindings aligned, body indented 2."
+  (let ((result (meta-lisp-test--indent
+                 "(令 ((x 1)\n(y 2))\n(整数加 x y))")))
+    (should (equal result "(令 ((x 1)\n     (y 2))\n  (整数加 x y))"))))
+
+(ert-deftest meta-lisp-indent-zh-letrec ()
+  "递归令: same as let."
+  (let ((result (meta-lisp-test--indent
+                 "(递归令 ((f (函 (n) n)))\n(f 1))")))
+    (should (equal result "(递归令 ((f (函 (n) n)))\n  (f 1))"))))
+
+(ert-deftest meta-lisp-indent-zh-if ()
+  "若: condition special, branches indented 2."
+  (let ((result (meta-lisp-test--indent
+                 "(若 (整数小于 x 0)\n(整数负 x)\nx)")))
+    (should (equal result "(若 (整数小于 x 0)\n  (整数负 x)\n  x)"))))
+
+(ert-deftest meta-lisp-indent-zh-cond ()
+  "若则 with 否则: clauses indented 2 from opening paren."
+  (let ((result (meta-lisp-test--indent
+                 "(若则\n((为整数 x) 1)\n(否则 2))")))
+    (should (equal result "(若则\n  ((为整数 x) 1)\n  (否则 2))"))))
+
+(ert-deftest meta-lisp-indent-zh-when-unless ()
+  "当 and 除非: condition special, body indented 2."
+  (let ((result (meta-lisp-test--indent
+                 "(当 debug\n(打印 \"debug\")\n(换行))")))
+    (should (equal result "(当 debug\n  (打印 \"debug\")\n  (换行))")))
+  (let ((result (meta-lisp-test--indent
+                 "(除非 debug\n(打印 \"debug\"))")))
+    (should (equal result "(除非 debug\n  (打印 \"debug\"))"))))
+
+(ert-deftest meta-lisp-indent-zh-match ()
+  "匹配: target special, clauses indented 2."
+  (let ((result (meta-lisp-test--indent
+                 "(匹配 exp\n((var-exp name)\nbody)\n((apply-exp target arg)\nbody2))")))
+    (should (equal result "(匹配 exp\n  ((var-exp name)\n   body)\n  ((apply-exp target arg)\n   body2))"))))
+
+(ert-deftest meta-lisp-indent-zh-begin ()
+  "循序: all body forms indented 2."
+  (let ((result (meta-lisp-test--indent
+                 "(循序\n(打印行 \"step 1\")\n42)")))
+    (should (equal result "(循序\n  (打印行 \"step 1\")\n  42)"))))
+
+(ert-deftest meta-lisp-indent-zh-pipe ()
+  "管道: target special, steps indented 2."
+  (let ((result (meta-lisp-test--indent
+                 "(管道 5\n加一\n平方)")))
+    (should (equal result "(管道 5\n  加一\n  平方)"))))
+
+(ert-deftest meta-lisp-indent-zh-define-test ()
+  "定义测试: name special, body indented 2."
+  (let ((result (meta-lisp-test--indent
+                 "(定义测试 平方测试\n(断言相等 4 (平方 2)))")))
+    (should (equal result "(定义测试 平方测试\n  (断言相等 4 (平方 2)))"))))
+
+(ert-deftest meta-lisp-indent-zh-define-struct ()
+  "定义结构: type-name special, fields indented 2."
+  (let ((result (meta-lisp-test--indent
+                 "(定义结构 point-t\n(x 浮点型)\n(y 浮点型))")))
+    (should (equal result "(定义结构 point-t\n  (x 浮点型)\n  (y 浮点型))"))))
+
+(ert-deftest meta-lisp-indent-zh-define-opaque ()
+  "定义黑盒类型: two special args, body indented 2."
+  (let ((result (meta-lisp-test--indent
+                 "(定义黑盒类型 (匣子型 E) (列表型 E)\n(作匣子 (-> (匣子型 E))))")))
+    (should (equal result
+                   "(定义黑盒类型 (匣子型 E) (列表型 E)\n  (作匣子 (-> (匣子型 E))))"))))
+
+(ert-deftest meta-lisp-indent-zh-import ()
+  "导入: module special, names indented 2."
+  (let ((result (meta-lisp-test--indent
+                 "(导入 math\npi\ncircumference)")))
+    (should (equal result "(导入 math\n  pi\n  circumference)"))))
+
+(ert-deftest meta-lisp-indent-zh-for ()
+  "遍历列表: like for-* forms, body indented 2."
+  (let ((result (meta-lisp-test--indent
+                 "(遍历列表 (x xs)\nx)")))
+    (should (equal result "(遍历列表 (x xs)\n  x)"))))
+
+(ert-deftest meta-lisp-indent-zh-top-level ()
+  "Chinese top-level forms should have no indentation."
+  (should (equal (meta-lisp-test--indent "(模块 示例)")
+                 "(模块 示例)")))
+
+;;; Font-lock -- Chinese keywords
+
+(ert-deftest meta-lisp-font-lock-zh-keyword ()
+  "Chinese special forms should use font-lock-keyword-face."
+  (should (eq (meta-lisp-test--font-lock-at "(§定义 x 1)")
+              'font-lock-keyword-face))
+  (should (eq (meta-lisp-test--font-lock-at "(§函 (x) x)")
+              'font-lock-keyword-face))
+  (should (eq (meta-lisp-test--font-lock-at "(§若 真 1 2)")
+              'font-lock-keyword-face))
+  (should (eq (meta-lisp-test--font-lock-at "(§若则 ((为整数 x) 1) (否则 2))")
+              'font-lock-keyword-face))
+  (should (eq (meta-lisp-test--font-lock-at "(§模块 example)")
+              'font-lock-keyword-face))
+  (should (eq (meta-lisp-test--font-lock-at "(§定义测试 t1 (断言 真))")
+              'font-lock-keyword-face))
+  (should (eq (meta-lisp-test--font-lock-at "(§定义类型 my-t (x 整数型))")
+              'font-lock-keyword-face))
+  (should (eq (meta-lisp-test--font-lock-at "(§声明原始函数 iadd 2)")
+              'font-lock-keyword-face))
+  (should (eq (meta-lisp-test--font-lock-at "(§遍历列表 (x xs) x)")
+              'font-lock-keyword-face))
+  (should (eq (meta-lisp-test--font-lock-at "(§否则 42)")
+              'font-lock-keyword-face)))
+
+(ert-deftest meta-lisp-font-lock-zh-function-name ()
+  "Chinese define/claim names should use font-lock-function-name-face."
+  (should (eq (meta-lisp-test--font-lock-at "(定义 (§平方 x) (整数乘 x x))")
+              'font-lock-function-name-face))
+  (should (eq (meta-lisp-test--font-lock-at "(定义 §answer 42)")
+              'font-lock-function-name-face))
+  (should (eq (meta-lisp-test--font-lock-at "(声明 §add1 (-> 整数型 整数型))")
+              'font-lock-function-name-face)))
+
+(ert-deftest meta-lisp-font-lock-zh-at-form ()
+  "@-prefixed Chinese forms should use meta-lisp-at-form-face."
+  (let ((face (meta-lisp-test--font-lock-at "(§@文本 \"a\" \"b\")")))
+    (should (eq face 'meta-lisp-at-form-face)))
+  (let ((face (meta-lisp-test--font-lock-at "(§@列表 1 2 3)")))
+    (should (eq face 'meta-lisp-at-form-face))))
+
+(ert-deftest meta-lisp-font-lock-zh-at-comment ()
+  "@注释 should use font-lock-comment-face."
+  (let ((face (meta-lisp-test--font-lock-at "(§@注释 (函 (x) x))")))
+    (should (eq face 'font-lock-comment-face))))
+
+(ert-deftest meta-lisp-font-lock-zh-builtin-constant ()
+  "Chinese builtin constants should use font-lock-builtin-face."
+  (let ((face (meta-lisp-test--font-lock-at "(若 §真 1 2)")))
+    (should (eq face 'font-lock-builtin-face)))
+  (let ((face (meta-lisp-test--font-lock-at "(若 §假 1 2)")))
+    (should (eq face 'font-lock-builtin-face)))
+  (let ((face (meta-lisp-test--font-lock-at "§空")))
+    (should (eq face 'font-lock-builtin-face))))
+
+(ert-deftest meta-lisp-font-lock-zh-type ()
+  "Chinese type names ending in 型 should use font-lock-type-face."
+  (let ((face (meta-lisp-test--font-lock-at "(声明 x §整数型)")))
+    (should (eq face 'font-lock-type-face)))
+  (let ((face (meta-lisp-test--font-lock-at "(声明 x §列表型)")))
+    (should (eq face 'font-lock-type-face)))
+  (let ((face (meta-lisp-test--font-lock-at "(声明 x §point-t)")))
+    (should (eq face 'font-lock-type-face))))
+
+(ert-deftest meta-lisp-font-lock-zh-module-prefix ()
+  "Chinese module prefix in qualified names should use module-name-face."
+  (let ((face (meta-lisp-test--font-lock-at "(§内置/列表长度 [1 2])")))
+    (should (eq face 'meta-lisp-module-name-face))))
+
+(ert-deftest meta-lisp-font-lock-zh-keyword-symbol ()
+  "Chinese keyword symbols (:键) should use font-lock-constant-face."
+  (let ((face (meta-lisp-test--font-lock-at "(@散列 §:键 1)")))
+    (should (eq face 'font-lock-constant-face))))
+
+(ert-deftest meta-lisp-font-lock-zh-quoted ()
+  "Quoted Chinese type names should get constant face, not type face."
+  (let ((face (meta-lisp-test--font-lock-at "'§整数型")))
+    (should (eq face 'font-lock-constant-face))))
+
+(ert-deftest meta-lisp-font-lock-zh-no-partial ()
+  "Chinese keywords inside larger symbols should NOT trigger keyword face."
+  (should-not (eq (meta-lisp-test--font-lock-at "(§定义器 x)")
+                  'font-lock-keyword-face))
+  (should-not (eq (meta-lisp-test--font-lock-at "(§声明器 x)")
+                  'font-lock-keyword-face)))
+
+(ert-deftest meta-lisp-font-lock-zh-function-call ()
+  "Chinese function calls should use font-lock-function-name-face."
+  (let ((old meta-lisp-highlight-function-calls))
+    (setq meta-lisp-highlight-function-calls t)
+    (unwind-protect
+        (progn
+          (should (eq (meta-lisp-test--font-lock-at "(§整数加 1 2)")
+                      'font-lock-function-name-face))
+          (should (eq (meta-lisp-test--font-lock-at "(§为point p)")
+                      'font-lock-function-name-face))
+          (should (eq (meta-lisp-test--font-lock-at "(§列表长度 [1 2])")
+                      'font-lock-function-name-face))
+          ;; Chinese special forms still get keyword face
+          (should (eq (meta-lisp-test--font-lock-at "(§定义 (f x) x)")
+                      'font-lock-keyword-face))
+          (should (eq (meta-lisp-test--font-lock-at "(§遍历列表 (x xs) x)")
+                      'font-lock-keyword-face)))
+      (setq meta-lisp-highlight-function-calls old))))
+
 (provide 'meta-lisp-test)
 ;;; meta-lisp-test.el ends here

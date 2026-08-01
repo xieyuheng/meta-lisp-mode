@@ -1,0 +1,137 @@
+;;; sample-zh.meta --- Visual test for meta-lisp Chinese syntax (中文语法)
+;;; Open this file in Emacs with meta-lisp-mode to verify Chinese
+;;; syntax highlighting and indentation.  The English counterpart is
+;;; in sample.meta.
+
+(模块 示例)
+
+;; === 变量 ===
+
+(声明 答案 整数型)
+(定义 答案 42)
+
+(声明 问候 文本型)
+(定义 问候 "hello world")
+
+;; === 函数 ===
+
+(定义 (平方 x)
+  (整数乘 x x))
+
+(定义 (加一 x)
+  (整数加 1 x))
+
+;; === 限定名 ===
+
+内置/列表长度
+示例/我的列表型
+
+;; === 条件 ===
+
+(定义 (绝对值 x)
+  (若 (整数小于 x 0)
+    (整数负 x)
+    x))
+
+(定义 (分类 x)
+  (若则
+    ((整数为正 x)
+     "positive")
+    ((整数为负 x)
+     "negative")
+    (否则
+     "zero")))
+
+(当 真
+  (打印行 "always runs")
+  (换行))
+
+(除非 假
+  (打印行 "also always runs"))
+
+;; === 局部绑定 ===
+
+(定义 (计算 x)
+  (令 ((a 1)
+       (b 2))
+    (整数乘 (整数加 a b) x)))
+
+;; === 递归 ===
+
+(递归令 ((为偶数
+           (函 (n)
+             (若 (相等 n 0)
+               真
+               (为奇数 (整数减 n 1)))))
+         (为奇数
+           (函 (n)
+             (若 (相等 n 0)
+               假
+               (为偶数 (整数减 n 1))))))
+  (断言 (为偶数 4)))
+
+;; === 模式匹配 ===
+
+(定义枚举 表达式型
+  (变量表达式 (name 符号型))
+  (应用表达式 (target 表达式型) (arg 表达式型))
+  (函表达式 (parameter 符号型) (body 表达式型)))
+
+(定义 (求值 exp env)
+  (匹配 exp
+    ((变量表达式 name)
+     (匹配 (env查找 name env)
+       ((有 value) value)
+       ((无) (错误 "undefined name"))))
+    ((应用表达式 target arg)
+     (作用 (求值 target env)
+       (求值 arg env)))
+    ((函表达式 parameter body)
+     (闭包值 env parameter body))))
+
+;; === 结构 ===
+
+(定义结构 点型
+  (x 浮点型)
+  (y 浮点型))
+
+(定义 (点距离平方 point)
+  (浮点加 (浮点乘 (点-x point) (点-x point))
+    (浮点乘 (点-y point) (点-y point))))
+
+;; === 标签与符号 ===
+
+(定义 配置 (@散列 :主机 "localhost" :端口 8080))
+(定义 符号 '你好)
+
+;; === 列表 ===
+
+(定义 xs [1 2 3 4 5])
+(定义 ys (@列表 1 2 3 4 5))
+
+;; === 管道 ===
+
+(定义 结果
+  (管道 5 加一 平方))
+
+;; === 模块导入 ===
+
+(导入 math pi circumference)
+(导入为 meta m)
+(全导入 builtin)
+
+;; === 测试 ===
+
+(定义测试 平方测试
+  (断言相等 4 (平方 2))
+  (断言相等 9 (平方 3)))
+
+;; @ 前缀形式
+
+(@列表 1 2 3)
+(@集合 "a" "b" "c")
+(@散列 :x 1 :y 2)
+(@文本 "hello" " " "world")
+(@引用 (a b c))
+(@符号算式 (a b c))
+(@注释 (函 (x) x))

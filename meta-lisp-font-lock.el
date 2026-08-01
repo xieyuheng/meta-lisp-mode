@@ -18,20 +18,33 @@
     "define-test"
     "declare-primitive-function" "declare-primitive-variable"
     "assert" "assert-not"
-    "assert-equal" "assert-not-equal")
+    "assert-equal" "assert-not-equal"
+    ;; Chinese counterparts (中文语法)
+    "定义" "定义测试" "定义类型" "定义枚举"
+    "定义代数类型" "定义记录类型" "定义结构" "定义结构*"
+    "定义黑盒类型"
+    "声明" "声明类型" "承认"
+    "声明原始函数" "声明原始变量"
+    "模块" "导入" "导入为" "全导入" "私有" "免检"
+    "函" "若" "若则" "当" "除非" "且" "或"
+    "循序" "令" "递归令" "匹配" "多匹配"
+    "管道" "串联" "复合" "型例" "多态" "否则")
   "Special forms in meta-lisp.
 
 These are keywords that appear as the first element of a list
-and have special evaluation semantics.")
+and have special evaluation semantics.  Both the English and the
+Chinese syntax are included.")
 
 (defconst meta-lisp--at-forms
-  '("@list" "@set" "@hash" "@quote" "@sexp" "@string")
+  '("@list" "@set" "@hash" "@quote" "@sexp" "@string"
+    "@列表" "@集合" "@散列" "@文本" "@引用" "@符号算式")
   "@-prefixed forms that are built-in syntax sugar.
 
-For example: (@list 1 2 3) is sugar for [1 2 3].")
+For example: (@list 1 2 3) is sugar for [1 2 3], and
+(@文本 \"a\" \"b\") concatenates strings.")
 
 (defconst meta-lisp--builtin-constants
-  '("true" "false" "void")
+  '("true" "false" "void" "真" "假" "空")
   "Builtin constant names in meta-lisp.")
 
 ;;; Helpers
@@ -44,15 +57,20 @@ For example: (@list 1 2 3) is sugar for [1 2 3].")
 (defun meta-lisp--re-at-forms ()
   "Return a regexp matching any @-prefixed form at the head of a list."
   (let ((syms meta-lisp--at-forms))
-    (concat "(\\(" (regexp-opt syms) "\\)")))
+    (concat "(\\(" (regexp-opt syms) "\\)\\_>")))
 
 (defun meta-lisp--re-builtin-constants ()
   "Return a regexp matching builtin constant names."
   (regexp-opt meta-lisp--builtin-constants))
 
 (defconst meta-lisp--name-re
-  "[a-zA-Z.$%&@][-a-zA-Z0-9?!+*/=<>_.$%&@]*"
-  "Regexp matching a meta-lisp name.")
+  "\\(?:\\sw\\|\\s_\\)+"
+  "Regexp matching a meta-lisp name.
+
+Uses syntax classes from `meta-lisp-mode-syntax-table': word
+characters (ASCII letters, digits, and CJK) and symbol
+constituents (like - ? ! @ . / $ % &).  This matches both English
+names (iadd, point-t) and Chinese names (整数加, 为point, 列表长度).")
 
 (defconst meta-lisp--non-expression-heads
   '(("let" . :structural)
@@ -81,7 +99,33 @@ For example: (@list 1 2 3) is sugar for [1 2 3].")
     ("private" . :all)
     ("exempt" . :all)
     ("declare-primitive-function" . :all)
-    ("declare-primitive-variable" . :all))
+    ("declare-primitive-variable" . :all)
+    ;; Chinese counterparts (中文语法)
+    ("函" . :structural)
+    ("令" . :structural)
+    ("递归令" . :structural)
+    ("多态" . :structural)
+    ("定义" . 1)
+    ("声明" . 1)
+    ("声明类型" . 1)
+    ("承认" . 1)
+    ("型例" . 1)
+    ("定义结构" . 1)
+    ("定义结构*" . 1)
+    ("定义枚举" . 1)
+    ("定义类型" . 1)
+    ("定义黑盒类型" . 2)
+    ("定义代数类型" . 1)
+    ("定义记录类型" . 1)
+    ("定义测试" . 1)
+    ("模块" . :all)
+    ("导入" . :all)
+    ("导入为" . :all)
+    ("全导入" . :all)
+    ("私有" . :all)
+    ("免检" . :all)
+    ("声明原始函数" . :all)
+    ("声明原始变量" . :all))
   "Alist mapping keywords to non-expression argument positions.
 
 Values:
@@ -129,9 +173,11 @@ Returns nil if the first element is not a symbol (e.g. a nested list)."
 
 (defun meta-lisp--lookup-rule (head)
   "Return the non-expression rule for HEAD keyword, or nil.
-Handles for-* forms as :structural implicitly."
+Handles for-* and 遍历* forms as :structural implicitly."
   (or (cdr (assoc head meta-lisp--non-expression-heads))
-      (when (string-prefix-p "for-" head) :structural)))
+      (when (or (string-prefix-p "for-" head)
+                (string-prefix-p "遍历" head))
+        :structural)))
 
 (defun meta-lisp--arg-index (parent-start form-start)
   "Return 1-based argument index of FORM-START within PARENT-START.
@@ -182,7 +228,7 @@ position.  FORM-START is the buffer position of the opening paren."
 (defun meta-lisp--match-function-call (limit)
   "Font-lock matcher: highlight function names in application position.
 Match (name ...) where name is not a special form, @-form, @comment,
-or for-* form, and the position is a genuine function-call context."
+or for-*/遍历* form, and the position is a genuine function-call context."
   (when meta-lisp-highlight-function-calls
     (catch 'meta-lisp--found
       (while (re-search-forward
@@ -192,7 +238,10 @@ or for-* form, and the position is a genuine function-call context."
           (unless (or (member name meta-lisp--special-forms)
                       (member name meta-lisp--at-forms)
                       (string= name "@comment")
-                      (string-prefix-p "for-" name))
+                      (string= name "@注释")
+                      (string-prefix-p "for-" name)
+                      (string-prefix-p "遍历" name)
+                      (string-prefix-p ":" name))
             (when (save-match-data
                     (meta-lisp--function-call-position-p
                      (match-beginning 0)))
@@ -200,53 +249,58 @@ or for-* form, and the position is a genuine function-call context."
 
 (defvar meta-lisp-font-lock-keywords
   `(
-   ;; Special forms at head position: (define ...)  (lambda ...)  etc.
+   ;; Special forms at head position: (define ...)  (定义 ...)  (lambda ...)
    (,(meta-lisp--re-special-forms)
     1 font-lock-keyword-face)
 
-   ;; Function name: (define (name args ...) body ...)
-   (,(concat "(define\\_>\\s-*(\\(" meta-lisp--name-re "\\)")
+   ;; Function name: (define (name args ...) body ...)  (定义 (名 参数 ...) ...)
+   (,(concat "(\\(?:define\\|定义\\)\\_>\\s-*(\\(" meta-lisp--name-re "\\)")
     1 font-lock-function-name-face)
 
-   ;; Variable / function name: (define name body ...)  (claim name type ...)
-   (,(concat "(\\(?:define\\|claim\\)\\_>\\s-*\\(" meta-lisp--name-re "\\)\\_>")
+   ;; Variable / function name: (define name body ...)  (声明 名 型 ...)
+   (,(concat "(\\(?:define\\|定义\\|claim\\|声明\\)\\_>\\s-*\\(" meta-lisp--name-re "\\)\\_>")
     1 font-lock-function-name-face)
 
-   ;; @-prefixed forms at head position: (@list ...)  (@set ...)  etc.
+   ;; @-prefixed forms at head position: (@list ...)  (@列表 ...)  etc.
    (,(meta-lisp--re-at-forms)
     1 'meta-lisp-at-form-face)
 
    ;; @comment form: structured comment that evaluates to void
-   (,(concat "(\\(@comment\\)\\_>")
+   (,(concat "(\\(@comment\\|@注释\\)\\_>")
     1 'font-lock-comment-face)
 
-   ;; for-* special forms at head position: (for-list ...)  (for-hash ...)  etc.
-   (,(concat "(\\(for-" meta-lisp--name-re "\\)\\_>")
+   ;; for-* / 遍历* special forms at head position:
+   ;; (for-list ...)  (遍历列表 ...)  etc.
+   (,(concat "(\\(\\(?:for-\\|遍历\\)" meta-lisp--name-re "\\)\\_>")
     1 font-lock-keyword-face)
 
    ;; Function calls: (f x y) where f is not a special form
    (meta-lisp--match-function-call 1 font-lock-function-name-face)
 
-   ;; Builtin constants as standalone symbols: true  false  void
+   ;; Builtin constants as standalone symbols: true  false  void 真 假 空
    (,(concat "\\_<" (meta-lisp--re-builtin-constants) "\\_>")
     0 font-lock-builtin-face)
 
-   ;; Quoted symbols: 'foo '.value '$value$  (before type-names for priority)
+   ;; Quoted symbols: 'foo '整数型 (before type-names for priority)
    (,(concat "'" meta-lisp--name-re "\\_>")
     0 font-lock-constant-face)
 
-   ;; Type names: any symbol ending in -t  (int-t  point-t  exp-t  ...)
-   (,(concat "\\_<[a-zA-Z.$%&@][-a-zA-Z0-9?!+*/=<>_.$%&@]*-t\\_>")
+   ;; Keywords: :key :键 (before type-names so :foo-t keeps keyword face)
+   (,(concat "\\_<:" meta-lisp--name-re "\\_>")
+    0 font-lock-constant-face)
+
+   ;; Type names: symbols ending in -t (int-t  point-t  ...) or
+   ;; 型 (整数型 列表型 ...)
+   (,(concat "\\_<" meta-lisp--name-re "-t\\_>")
     0 font-lock-type-face)
 
-   ;; Module prefix: module/ in qualified names like module/name
-   ;; OVERRIDE=t so it overrides the type face on e.g. builtin/string-t
-   (,(concat "\\_<\\([a-zA-Z.$%&@][-a-zA-Z0-9?!+*/=<>_.$%&@]*/\\)")
-    1 'meta-lisp-module-name-face t)
+   (,(concat "\\_<" meta-lisp--name-re "型\\_>")
+    0 font-lock-type-face)
 
-   ;; Keywords: :key :name :etc
-   (,(concat "\\_<:[-a-zA-Z0-9?!+*/=<>_]+\\_>")
-    0 font-lock-constant-face)
+   ;; Module prefix: module/ in qualified names like module/name 内置/列表长度
+   ;; OVERRIDE=t so it overrides the type face on e.g. builtin/string-t
+   (,(concat "\\_<\\(" meta-lisp--name-re "/\\)")
+    1 'meta-lisp-module-name-face t)
 
    ;; Numbers: integers and floats
    (,(concat "\\_<-?[0-9]+\\(\\.[0-9]+\\)?\\_>")
