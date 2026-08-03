@@ -531,7 +531,7 @@ face at that position is returned."
               'font-lock-keyword-face))
   (should (eq (meta-lisp-test--font-lock-at "(§定义类型 my-t (x 整数型))")
               'font-lock-keyword-face))
-  (should (eq (meta-lisp-test--font-lock-at "(§声明原始函数 iadd 2)")
+  (should (eq (meta-lisp-test--font-lock-at "(§声明基本函数 iadd 2)")
               'font-lock-keyword-face))
   (should (eq (meta-lisp-test--font-lock-at "(§遍历列表 (x xs) x)")
               'font-lock-keyword-face))
