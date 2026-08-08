@@ -20,7 +20,7 @@
 (define (add1 x)
   (iadd 1 x))
 
-(claim compose (polymorphic (A B C) (-> (-> B C) (-> A B) (-> A C))))
+(claim compose (all (A B C) (-> (-> B C) (-> A B) (-> A C))))
 (define (compose f g)
   (lambda (x)
     (f (g x))))

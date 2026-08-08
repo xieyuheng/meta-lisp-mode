@@ -284,7 +284,7 @@ face at that position is returned."
                   'font-lock-keyword-face))
   (should-not (eq (meta-lisp-test--font-lock-at "(§if-term ...)")
                   'font-lock-keyword-face))
-  (should-not (eq (meta-lisp-test--font-lock-at "(§polymorphic-term ...)")
+  (should-not (eq (meta-lisp-test--font-lock-at "(§all-term ...)")
                   'font-lock-keyword-face)))
 
 (ert-deftest meta-lisp-font-lock-keyword-constant ()
@@ -359,8 +359,8 @@ face at that position is returned."
           ;; let binding variable
           (should-not (eq (meta-lisp-test--font-lock-at "(let ((§x 1)) x)")
                           'font-lock-function-name-face))
-          ;; polymorphic type param
-          (should-not (eq (meta-lisp-test--font-lock-at "(polymorphic (§A) A)")
+          ;; all type param
+          (should-not (eq (meta-lisp-test--font-lock-at "(all (§A) A)")
                           'font-lock-function-name-face))
           ;; define function header name (highlighted by existing define-name rule)
           (should (eq (meta-lisp-test--font-lock-at "(define (§f x) (g x))")
@@ -381,8 +381,8 @@ face at that position is returned."
           ;; lambda body
           (should (eq (meta-lisp-test--font-lock-at "(lambda (x) (§iadd x 1))")
                       'font-lock-function-name-face))
-          ;; polymorphic body
-          (should (eq (meta-lisp-test--font-lock-at "(polymorphic (A) (§id A))")
+          ;; all body
+          (should (eq (meta-lisp-test--font-lock-at "(all (A) (§id A))")
                       'font-lock-function-name-face))
           ;; deep nesting: let binding value expression
           (should (eq (meta-lisp-test--font-lock-at "(let ((x (§car (§cdr y)))) x)")

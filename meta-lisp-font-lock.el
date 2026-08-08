@@ -10,7 +10,7 @@
     "swap"
     "="
     "module" "import" "import-as" "import-all" "private"
-    "claim" "claim-type" "admit" "the" "polymorphic"
+    "claim" "claim-type" "admit" "the" "all"
     "->"
     "define-algebraic-type" "define-record-type"
     "define-struct" "define-struct*" "define-enum"
@@ -28,7 +28,7 @@
     "模块" "导入" "导入为" "全导入" "私有" "免检"
     "函" "若" "若则" "当" "除非" "且" "或"
     "循序" "令" "递归令" "匹配" "多匹配"
-    "管道" "串联" "复合" "型例" "多态" "否则")
+    "管道" "串联" "复合" "型例" "泛型" "否则")
   "Special forms in meta-lisp.
 
 These are keywords that appear as the first element of a list
@@ -78,7 +78,7 @@ names (iadd, point-t) and Chinese names (整数加, 为point, 列表长度).")
     ("letrec" . :structural)
     ("letrec*" . :structural)
     ("lambda" . :structural)
-    ("polymorphic" . :structural)
+    ("all" . :structural)
     ("define" . 1)
     ("claim" . 1)
     ("claim-type" . 1)
@@ -104,7 +104,7 @@ names (iadd, point-t) and Chinese names (整数加, 为point, 列表长度).")
     ("函" . :structural)
     ("令" . :structural)
     ("递归令" . :structural)
-    ("多态" . :structural)
+    ("泛型" . :structural)
     ("定义" . 1)
     ("声明" . 1)
     ("声明类型" . 1)
@@ -131,7 +131,7 @@ names (iadd, point-t) and Chinese names (整数加, 为point, 列表长度).")
 Values:
   :structural -- arg 1 is a structural list whose direct children
                  have non-expression heads (e.g. let bindings,
-                 lambda params, polymorphic type params).
+                 lambda params, all type params).
   N (integer) -- first N arguments have non-expression heads
                  (e.g. define's name/header at arg 1).
   :all        -- all arguments have non-expression heads
