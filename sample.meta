@@ -155,10 +155,10 @@ $money-t
    :y 2.0
    :label "origin"})
 
-;; === Pipes ===
+;; === Flows ===
 
 (define result
-  (pipe 5 add1 square))
+  (flow 5 add1 square))
 
 ;; === Module imports ===
 

@@ -471,11 +471,11 @@ face at that position is returned."
                  "(循序\n(打印行 \"step 1\")\n42)")))
     (should (equal result "(循序\n  (打印行 \"step 1\")\n  42)"))))
 
-(ert-deftest meta-lisp-indent-zh-pipe ()
-  "管道: target special, steps indented 2."
+(ert-deftest meta-lisp-indent-zh-flow ()
+  "顺流: target special, steps indented 2."
   (let ((result (meta-lisp-test--indent
-                 "(管道 5\n加一\n平方)")))
-    (should (equal result "(管道 5\n  加一\n  平方)"))))
+                 "(顺流 5\n加一\n平方)")))
+    (should (equal result "(顺流 5\n  加一\n  平方)"))))
 
 (ert-deftest meta-lisp-indent-zh-define-test ()
   "定义测试: name special, body indented 2."

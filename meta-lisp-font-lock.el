@@ -6,7 +6,7 @@
   '("define" "lambda" "let" "let*" "letrec" "letrec*"
     "if" "cond" "when" "unless" "and" "or" "else"
     "begin" "match" "match-many"
-    "pipe" "chain" "compose"
+    "flow" "chain" "compose"
     "swap"
     "="
     "module" "import" "import-as" "import-all" "private"
@@ -28,7 +28,7 @@
     "模块" "导入" "导入为" "全导入" "私有" "免检"
     "函" "若" "若则" "当" "除非" "且" "或"
     "循序" "令" "递归令" "匹配" "多匹配"
-    "管道" "串联" "复合" "型例" "泛型" "否则")
+    "顺流" "衔接" "复合" "型例" "泛型" "否则")
   "Special forms in meta-lisp.
 
 These are keywords that appear as the first element of a list
