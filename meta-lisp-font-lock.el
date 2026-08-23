@@ -247,6 +247,23 @@ or for-*/遍历* form, and the position is a genuine function-call context."
                      (match-beginning 0)))
               (throw 'meta-lisp--found t))))))))
 
+(defun meta-lisp--match-module-prefix (limit)
+  "Font-lock matcher: match a qualified-name module prefix.
+Search for module/ in qualified names like module/name and 内置/列表长度,
+but skip matches already fontified as strings or comments so that
+string literals keep their `font-lock-string-face' and comments keep
+their comment face."
+  (catch 'meta-lisp--found
+    (while (re-search-forward
+            (concat "\\_<\\(" meta-lisp--name-re "/\\)")
+            limit t)
+      (let* ((pos (match-beginning 0))
+             (face (get-text-property pos 'face))
+             (faces (if (consp face) face (list face))))
+        (unless (or (memq 'font-lock-string-face faces)
+                    (memq 'font-lock-comment-face faces))
+          (throw 'meta-lisp--found t))))))
+
 (defvar meta-lisp-font-lock-keywords
   `(
    ;; Special forms at head position: (define ...)  (定义 ...)  (lambda ...)
@@ -298,8 +315,9 @@ or for-*/遍历* form, and the position is a genuine function-call context."
     0 font-lock-type-face)
 
    ;; Module prefix: module/ in qualified names like module/name 内置/列表长度
-   ;; OVERRIDE=t so it overrides the type face on e.g. builtin/string-t
-   (,(concat "\\_<\\(" meta-lisp--name-re "/\\)")
+   ;; OVERRIDE=t so it overrides the type face on e.g. builtin/string-t.
+   ;; The matcher skips strings/comments so string literals keep string face.
+   (meta-lisp--match-module-prefix
     1 'meta-lisp-module-name-face t)
 
    ;; Numbers: integers and floats

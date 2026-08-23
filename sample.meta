@@ -30,6 +30,11 @@
 example/my-list-t
 example/abc
 
+;; === String literal ===
+
+"example/my-list-t"
+"example/abc"
+
 ;; === Conditionals ===
 
 (define (abs x)

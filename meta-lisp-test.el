@@ -302,6 +302,15 @@ face at that position is returned."
   (let ((face (meta-lisp-test--font-lock-at "(math/§point-t x y)")))
     (should (eq face 'font-lock-type-face))))
 
+(ert-deftest meta-lisp-font-lock-string-not-qualified ()
+  "String contents should not be highlighted as qualified-name prefixes."
+  (should (eq (meta-lisp-test--font-lock-at "\"§example/my-list-t\"")
+              'font-lock-string-face))
+  (should (eq (meta-lisp-test--font-lock-at "\"§example/abc\"")
+              'font-lock-string-face))
+  (should (eq (meta-lisp-test--font-lock-at ";; §example/my-list-t")
+              'font-lock-comment-face)))
+
 ;;; Comment tests
 
 (ert-deftest meta-lisp-comment-syntax ()
